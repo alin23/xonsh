@@ -1898,7 +1898,12 @@ class CommandPipeline:
         if hasattr(stdout, "buffer"):
             stdout = stdout.buffer
         if stdout is not None and not isinstance(stdout, self.nonblocking):
-            stdout = NonBlockingFDReader(stdout.fileno(), timeout=timeout)
+            if stdout.closed and stdout.name == os.devnull:
+                stdout = os.open(os.devnull, os.O_RDWR)
+                stdout = NonBlockingFDReader(stdout, timeout=timeout)
+            else:
+                stdout = NonBlockingFDReader(stdout.fileno(), timeout=timeout)
+
         if (
             not stdout
             or self.captured == "stdout"
@@ -1933,7 +1938,11 @@ class CommandPipeline:
         if hasattr(stderr, "buffer"):
             stderr = stderr.buffer
         if stderr is not None and not isinstance(stderr, self.nonblocking):
-            stderr = NonBlockingFDReader(stderr.fileno(), timeout=timeout)
+            if stderr.closed and stderr.name == os.devnull:
+                stderr = os.open(os.devnull, os.O_RDWR)
+                stderr = NonBlockingFDReader(stderr, timeout=timeout)
+            else:
+                stderr = NonBlockingFDReader(stderr.fileno(), timeout=timeout)
         # read from process while it is running
         check_prev_done = len(self.procs) == 1
         prev_end_time = None
